@@ -1,0 +1,127 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(streamTranscoderv3, 3.1.11)
+AC_CONFIG_SRCDIR(streamTranscoderv3.cpp)
+
+AM_INIT_AUTOMAKE
+
+AC_PROG_CC
+#AC_PROG_CXX
+AC_CANONICAL_HOST
+AM_PROG_LIBTOOL
+
+dnl Set some options based on environment
+
+SOCKET_LIBS=
+
+if test -z "$GCC"; then
+        case $host in 
+        *-*-irix*)
+                DEBUG="-g -signed -D_REENTRANT" 
+                CFLAGS="-O2 -w -signed -D_REENTRANT"
+                PROFILE="-p -g3 -O2 -signed -D_REENTRANT"
+		;;
+        *-*-solaris*)
+                DEBUG="-v -g -D_REENTRANT"
+                CFLAGS="-xO4 -fast -w -fsimple -native -xcg92 -D_REENTRANT"
+                PROFILE="-v -xpg -g -xO4 -fast -native -fsimple -xcg92 -Dsuncc -D_REENTRANT"
+		SOCKET_LIBS="-lnsl -lsocket -lresolv"
+		;;
+        *)
+                DEBUG="-g -D_REENTRANT"
+                CFLAGS="-O -D_REENTRANT"
+                PROFILE="-g -p -D_REENTRANT"
+		;;
+        esac
+else
+        case $host in 
+        *-*-linux*)
+                DEBUG="-g -Wall -fsigned-char -D_REENTRANT -D_GNU_SOURCE"
+                CFLAGS="-O20 -ffast-math -fsigned-char -D_REENTRANT -D_GNU_SOURCE"
+                PROFILE="-Wall -W -pg -g -O20 -ffast-math -fsigned-char -D_REENTRANT -D_GNU_SOURCE"
+        		LIBS=" $LIBS -lpthread"
+		;;
+        sparc-sun-solaris*)
+                DEBUG="-g -Wall -fsigned-char -mv8 -D_REENTRANT"
+                CFLAGS="-O20 -ffast-math -fsigned-char -mv8 -D_REENTRANT"
+                PROFILE="-pg -g -O20 -fsigned-char -mv8 -D_REENTRANT" 
+		        SOCKET_LIBS="-lnsl -lsocket -lresolv"
+        		LIBS=" $LIBS -lpthread"
+		;;
+	*-pc-solaris*)
+                DEBUG="-g -Wall -fsigned-char -D_REENTRANT"
+                CFLAGS="-O20 -ffast-math -fsigned-char -D_REENTRANT"
+                PROFILE="-pg -g -O20 -fsigned-char -D_REENTRANT" 
+		        SOCKET_LIBS="-lnsl -lsocket -lresolv"
+        		LIBS=" $LIBS -lpthread"
+		;;
+        *freebsd*)
+                DEBUG="-g -Wall -fsigned-char -D_REENTRANT"
+                CFLAGS="-O20 -fsigned-char -D_REENTRANT"
+                PROFILE="-O20 -g -pg -fsigned-char -D_REENTRANT" 
+        		LIBS=" $LIBS -pthread"
+		;;
+        *)
+                DEBUG="-g -Wall -fsigned-char -D_REENTRANT"
+                CFLAGS="-O20 -fsigned-char -D_REENTRANT"
+                PROFILE="-O20 -g -pg -fsigned-char -D_REENTRANT" 
+		        LIBS=" $LIBS -lpthread"
+		;;
+        esac
+fi
+
+dnl Checks for programs.
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+dnl -- configure options --
+
+XIPH_PATH_OGG(, AC_MSG_ERROR(must have Ogg installed!(Perhaps you need --with-ogg-prefix=/usr/local)))
+XIPH_PATH_VORBIS(, AC_MSG_ERROR(must have Vorbis installed!(Perhaps you need --with-vorbis-prefix=/usr/local)))
+AM_PATH_MAD(, AC_MSG_ERROR(must have libmad installed!))
+AM_PATH_LIBFLAC(HAVE_FLAC=1, AC_MSG_WARN(libflac not installed, OggFLAC/FLAC encoding DISABLED.))
+AM_PATH_LAME(HAVE_LAME=1, AC_MSG_WARN(LAME not installed, MP3 encoding DISABLED.))
+
+####################################################################
+#  CHECKING FOR FAAC                                               #
+####################################################################
+OLDCFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -lfaac -lm"
+
+AC_CHECK_LIB(faac, faacEncOpen, FAAC_LIBS="-lfaac -lm")
+if test "${ac_cv_lib_faac_faacEncOpen}" = "no"
+then
+  AC_MSG_WARN([FAAC not installed, AAC encoding DISABLED.])
+  FAAC_CFLAGS=""
+else
+  FAAC_CFLAGS="-DHAVE_FAAC"
+fi
+
+CFLAGS="$OLDCFLAGS"
+
+
+dnl Make substitutions
+
+AC_SUBST(FAAC_CFLAGS)
+AC_SUBST(FAAC_LIBS)
+AC_SUBST(LIBFLAC_CFLAGS)
+AC_SUBST(LIBFLAC_LIBS)
+
+AC_SUBST(MAD_CFLAGS)
+AC_SUBST(MAD_LIBS)
+AC_SUBST(LAME_CFLAGS)
+AC_SUBST(LAME_LIBS)
+AC_SUBST(OGG_CFLAGS)
+AC_SUBST(VORBIS_CFLAGS)
+AC_SUBST(OGG_LIBS)
+AC_SUBST(VORBIS_LIBS)
+AC_SUBST(LIBS)
+AC_SUBST(DEBUG)
+AC_SUBST(CFLAGS)
+
+AC_OUTPUT(Makefile liboddcast/Makefile)
